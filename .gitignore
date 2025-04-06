@@ -1,0 +1,84 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment directories
+venv/
+env/
+ENV/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage*
+.cache/
+.pytest_cache/
+nosetests.xml
+
+# Local environment variables (sensitive data)
+.env
+.env.*
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# macOS files
+.DS_Store
+
+# Log files
+*.log
+
+# Google OAuth / OAuth tokens
+client_secret.json
+token.json
+
+# Temporary brainstorming notes
+brainstorming.txt
+
+# Personal Deep Dive / Interview Prep Notes
+PROJECT_DEEP_DIVE.md
+
+# Node.js dependencies (if using a frontend framework like Vue or React)
+node_modules/
+
+# Docker files (if you create local override files or logs)
+docker-compose.override.yml
+docker-compose.local.yml
+.docker/
+
+# DynamoDB Local data (if applicable)
+dynamodb_local/
+
+# Generated output files (adjust if you want to track these)
+#output.json
+#extracted_content.json
+#extracted_messages.json
+
+# Default Input/Output Directories for sensitive data
+chatgpt-export-json/
+output_json/
+
+# Directories ignored to prevent committing potentially sensitive data
+parsed_archive/
+
+# Documentation (internal/journey)
+PROJECT_DEEP_DIVE.md
+PROJECT_JOURNEY.md
+
+# Python specific
+# ... existing code ...
+

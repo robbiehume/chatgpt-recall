@@ -1,0 +1,161 @@
+{
+  "id": "67f15cfc-f588-8003-b8db-3d41bdb7960b",
+  "title": "New chat",
+  "create_time": 1743871229.219892,
+  "update_time": 1743871233.990876,
+  "mapping": {
+    "client-created-root": {
+      "id": "client-created-root",
+      "message": null,
+      "parent": null,
+      "children": ["8133feaa-d564-4722-8956-b1676e5d2a95"]
+    },
+    "8133feaa-d564-4722-8956-b1676e5d2a95": {
+      "id": "8133feaa-d564-4722-8956-b1676e5d2a95",
+      "message": {
+        "id": "8133feaa-d564-4722-8956-b1676e5d2a95",
+        "author": { "role": "system", "name": null, "metadata": {} },
+        "create_time": null,
+        "update_time": null,
+        "content": { "content_type": "text", "parts": [""] },
+        "status": "finished_successfully",
+        "end_turn": true,
+        "weight": 0,
+        "metadata": { "is_visually_hidden_from_conversation": true },
+        "recipient": "all",
+        "channel": null
+      },
+      "parent": "client-created-root",
+      "children": ["e00486b6-5c6c-4cc0-bb78-c1bc40ea1179"]
+    },
+    "e00486b6-5c6c-4cc0-bb78-c1bc40ea1179": {
+      "id": "e00486b6-5c6c-4cc0-bb78-c1bc40ea1179",
+      "message": {
+        "id": "e00486b6-5c6c-4cc0-bb78-c1bc40ea1179",
+        "author": { "role": "system", "name": null, "metadata": {} },
+        "create_time": null,
+        "update_time": null,
+        "content": { "content_type": "text", "parts": [""] },
+        "status": "finished_successfully",
+        "end_turn": true,
+        "weight": 0,
+        "metadata": {
+          "rebase_developer_message": true,
+          "is_visually_hidden_from_conversation": true
+        },
+        "recipient": "all",
+        "channel": null
+      },
+      "parent": "8133feaa-d564-4722-8956-b1676e5d2a95",
+      "children": ["5218c534-7540-4acf-9bde-2df6bd8e4979"]
+    },
+    "5218c534-7540-4acf-9bde-2df6bd8e4979": {
+      "id": "5218c534-7540-4acf-9bde-2df6bd8e4979",
+      "message": {
+        "id": "5218c534-7540-4acf-9bde-2df6bd8e4979",
+        "author": { "role": "user", "name": null, "metadata": {} },
+        "create_time": null,
+        "update_time": null,
+        "content": {
+          "content_type": "user_editable_context",
+          "user_profile": "[SANITIZED FOR TEST DATA]",
+          "user_instructions": "[SANITIZED FOR TEST DATA]"
+        },
+        "status": "finished_successfully",
+        "end_turn": null,
+        "weight": 1,
+        "metadata": {
+          "is_visually_hidden_from_conversation": true,
+          "user_context_message_data": {
+            "about_user_message": "[SANITIZED FOR TEST DATA]",
+            "about_model_message": "[SANITIZED FOR TEST DATA]"
+          },
+          "is_user_system_message": true
+        },
+        "recipient": "all",
+        "channel": null
+      },
+      "parent": "e00486b6-5c6c-4cc0-bb78-c1bc40ea1179",
+      "children": ["3089b216-591f-401a-95e1-f9834887103f"]
+    },
+    "3089b216-591f-401a-95e1-f9834887103f": {
+      "id": "3089b216-591f-401a-95e1-f9834887103f",
+      "message": {
+        "id": "3089b216-591f-401a-95e1-f9834887103f",
+        "author": { "role": "user", "name": null, "metadata": {} },
+        "create_time": 1743871228.746,
+        "update_time": null,
+        "content": { "content_type": "text", "parts": ["hi original"] },
+        "status": "finished_successfully",
+        "end_turn": null,
+        "weight": 1,
+        "metadata": {
+          "timestamp_": "absolute"
+        },
+        "recipient": "all",
+        "channel": null
+      },
+      "parent": "5218c534-7540-4acf-9bde-2df6bd8e4979",
+      "children": ["2118eb5b-691f-4906-aa42-059eef1677dd"]
+    },
+    "2118eb5b-691f-4906-aa42-059eef1677dd": {
+      "id": "2118eb5b-691f-4906-aa42-059eef1677dd",
+      "message": {
+        "id": "2118eb5b-691f-4906-aa42-059eef1677dd",
+        "author": { "role": "tool", "name": "a8km123", "metadata": {} },
+        "create_time": 1743871230.283601,
+        "update_time": null,
+        "content": { "content_type": "text", "parts": [""] },
+        "status": "finished_successfully",
+        "end_turn": null,
+        "weight": 0,
+        "metadata": {
+          "timestamp_": "absolute"
+        },
+        "recipient": "all",
+        "channel": null
+      },
+      "parent": "3089b216-591f-401a-95e1-f9834887103f",
+      "children": ["ec815bcd-7526-4743-8542-fc3b49cfd945"]
+    },
+    "ec815bcd-7526-4743-8542-fc3b49cfd945": {
+      "id": "ec815bcd-7526-4743-8542-fc3b49cfd945",
+      "message": {
+        "id": "ec815bcd-7526-4743-8542-fc3b49cfd945",
+        "author": { "role": "assistant", "name": null, "metadata": {} },
+        "create_time": 1743871229.353561,
+        "update_time": null,
+        "content": {
+          "content_type": "text",
+          "parts": ["Summary: Hi there! How can I assist you today? (Original)"]
+        },
+        "status": "finished_successfully",
+        "end_turn": true,
+        "weight": 1,
+        "metadata": {
+          "timestamp_": "absolute"
+        },
+        "recipient": "all",
+        "channel": null
+      },
+      "parent": "2118eb5b-691f-4906-aa42-059eef1677dd",
+      "children": []
+    }
+  },
+  "moderation_results": [],
+  "current_node": "ec815bcd-7526-4743-8542-fc3b49cfd945",
+  "plugin_ids": null,
+  "conversation_id": "67f15cfc-f588-8003-b8db-3d41bdb7960b",
+  "conversation_template_id": null,
+  "gizmo_id": null,
+  "gizmo_type": null,
+  "is_archived": false,
+  "is_starred": null,
+  "safe_urls": [],
+  "blocked_urls": [],
+  "default_model_slug": "o3-mini-high",
+  "conversation_origin": null,
+  "voice": null,
+  "async_status": null,
+  "disabled_tool_ids": []
+}
