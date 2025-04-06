@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project provides a Python-based ETL (Extract, Transform, Load) pipeline designed to process conversation history exported from OpenAI's ChatGPT (in JSON format). It extracts the canonical message thread from each conversation, transforms it into a structured format, and loads it into a DynamoDB table. A key feature is its ability to efficiently handle updates and edits in the source JSON by comparing the current canonical messages with the existing records in DynamoDB and performing necessary insertions, updates, and deletions (Diff and Delete strategy).
+This project provides a Python-based ETL (Extract, Transform, Load) pipeline designed to process conversation history exported from OpenAI's ChatGPT (in JSON format). It extracts the canonical message thread from each conversation, generates vector embeddings for the content using OpenAI's API, transforms the data into a structured format, and loads it into both a DynamoDB table (for metadata and text) and a Weaviate vector store (for embeddings and searchable metadata). A key feature is its ability to efficiently handle updates and edits in the source JSON by comparing the current canonical messages with existing records and performing necessary insertions, updates, and deletions in both data stores.
 
 The project emphasizes modularity, testability, and adherence to standard Python project structuring and testing practices.
 
@@ -13,7 +13,7 @@ The project emphasizes modularity, testability, and adherence to standard Python
 - **Embedding Generation:** Generates vector embeddings for message content using OpenAI's API (`text-embedding-3-small` by default).
 - **Robust Parsing:** Handles variations in the export format (e.g., top-level list or dictionary).
 - **DynamoDB Integration:** Loads extracted messages into a specified DynamoDB table, storing conversation ID, message ID, author, timestamp, content, and the generated `ContentEmbedding`.
-- **Vector Store Integration (Planned):** The ingestion process will be modified to also load embeddings and relevant metadata into a dedicated vector store (Weaviate planned for local development) to enable efficient similarity search.
+- **Vector Store Integration:** The ingestion process loads embeddings and relevant metadata into a dedicated Weaviate vector store (running locally via Docker Compose) to enable efficient similarity search.
 - **Efficient Updates (Diff and Delete):** When re-processing, compares the newly parsed canonical messages against existing messages for that conversation in DynamoDB. It then performs a batch operation to:
   - `DELETE` messages that are no longer part of the canonical thread.
   - `PUT` new or updated messages (DynamoDB's `put_item` handles both inserts and updates).
@@ -40,7 +40,7 @@ The project emphasizes modularity, testability, and adherence to standard Python
 - **Pytest:** Testing framework.
 - **DynamoDB:** NoSQL database (designed for AWS DynamoDB, uses DynamoDB Local for development and testing).
 - **OpenAI API:** Used for generating text embeddings.
-- **Weaviate (Planned):** Vector database used for storing and searching embeddings (run locally via Docker Compose for development).
+- **Weaviate:** Vector database used for storing and searching embeddings (run locally via Docker Compose for development).
 
 ## Setup
 
@@ -80,6 +80,10 @@ For local development and testing, the application requires Docker and Docker Co
 
 ```
 .
+├── .gitignore
+├── docker-compose.yml    # Docker Compose configuration for local services
+├── data/                 # Local persistent data (Gitignored)
+│   └── dynamodb/
 ├── chat_etl/             # Core application package
 │   ├── __init__.py
 │   ├── ingest_convos.py
@@ -88,19 +92,19 @@ For local development and testing, the application requires Docker and Docker Co
 │   └── utils/
 │       ├── __init__.py
 │       └── dynamodb_utils.py
-├── chatgpt-export-json/  # Default directory for raw ChatGPT JSON exports
-├── output_json/          # Directory for parsed JSON files from the current run
-├── parsed_archive/       # Archive of parsed JSON files from the previous run
+├── chatgpt-export-json/  # Default directory for raw ChatGPT JSON exports (Gitignored)
+├── output_json/          # Directory for parsed JSON files from the current run (Gitignored)
+├── parsed_archive/       # Archive of parsed JSON files from the previous run (Gitignored)
 ├── tests/                # Contains all test code and data
 │   ├── __init__.py
 │   ├── test_data/        # Sample data for testing
 │   │   ├── original/
 │   │   ├── updated/
 │   │   └── output_parsed/ # Temporary output during test runs
-│   ├── test_db_queries.py # Manual query script
+│   ├── test_db_queries.py # Manual DynamoDB query script
+│   ├── test_weaviate_queries.py # Manual Weaviate query script
 │   ├── test_etl_workflow.py # Pytest integration tests
 │   └── test_parse_convos.py # Pytest unit tests
-├── .gitignore
 ├── pytest.ini            # Pytest configuration (e.g., warning filters)
 ├── README.md             # This file
 └── requirements.txt      # Project dependencies
@@ -128,32 +132,41 @@ The main workflow is coordinated by `orchestrator.py`:
       - Uses DynamoDB's `batch_writer` to efficiently:
         - Delete items whose `ItemType` corresponds to an ID in `ids_to_delete`.
         - Put items for every message in the current `canonical_messages` list (this performs inserts for new messages and updates for existing ones, regenerating embeddings for all put items).
-      - _(Planned)_ Uses Weaviate client to batch insert/update message data and embeddings into the vector store.
+      - Uses Weaviate client (v4 API) to batch insert/update message data and embeddings into the vector store.
 
 ## 7. Running the Application
 
 1.  Place your exported ChatGPT JSON file(s) (e.g., `conversations.json` or multiple files) into the `chatgpt-export-json/` directory.
-2.  Ensure DynamoDB Local is running.
-3.  Activate your virtual environment (`source venv/bin/activate`).
-4.  Run the orchestrator **as a module** from the project root directory:
+2.  Ensure Docker and Docker Compose are running.
+3.  Start the local database services (DynamoDB Local and Weaviate):
+    ```bash
+    docker-compose up -d
+    ```
+4.  Ensure the `ChatConversations` table exists in DynamoDB Local (create it using AWS CLI if running for the first time - see Setup step 4).
+5.  Activate your virtual environment (`source venv/bin/activate`).
+6.  Run the orchestrator **as a module** from the project root directory:
     ```bash
     python -m chat_etl.orchestrator
     ```
-    This will process files in `chatgpt-export-json/`, save parsed results to `output_json/`, and ingest/sync data into the `ChatConversations` table in DynamoDB Local. Re-running the script will apply the diff-and-delete logic for any changes found in the source files.
 
 ## 8. Running Tests
 
-The project includes integration tests using `pytest` that verify the end-to-end ETL process, including the diff-and-delete logic.
+The project includes integration tests using `pytest` that verify the end-to-end ETL process, including the diff-and-delete logic. Manual query scripts for DynamoDB and Weaviate are also provided.
 
 1.  **Prerequisites:**
-    - Ensure DynamoDB Local is running.
+    - Ensure Docker and Docker Compose are running.
+    - Ensure the local services are running (`docker-compose up -d`).
     - Ensure dependencies (including `pytest`) are installed (`pip install -r requirements.txt`).
-2.  **Run Tests:**
+    - Ensure the `OPENAI_API_KEY` environment variable is set if running tests involving embeddings or Weaviate queries.
+2.  **Run Automated Tests (Pytest):**
     Activate your virtual environment and run `pytest` from the project root directory. Using `-sv` provides verbose output and shows print statements:
     ```bash
     python -m pytest -sv
     ```
-    Pytest will automatically discover and run the tests in the `tests/` directory, including both integration and unit tests. The integration tests will create temporary tables in DynamoDB Local, run the workflow, verify results, and clean up the tables automatically.
+    Pytest will automatically discover and run the tests in the `tests/` directory. Integration tests may interact with the running Docker Compose services (creating temporary tables if needed).
+3.  **Run Manual Query Scripts:**
+    - To query DynamoDB: `python tests/test_db_queries.py`
+    - To query Weaviate: `python tests/test_weaviate_queries.py`
 
 ## Security Note
 
