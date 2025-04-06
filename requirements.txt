@@ -1,2 +1,5 @@
 boto3>=1.34.0
 pytest
+python-dotenv
+openai
+weaviate-client

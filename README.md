@@ -10,8 +10,10 @@ The project emphasizes modularity, testability, and adherence to standard Python
 
 - **Parses ChatGPT JSON Exports:** Handles the official JSON structure provided by ChatGPT data exports.
 - **Canonical Thread Extraction:** Intelligently traverses the conversation node mapping to extract only the messages belonging to the main (canonical) conversation thread, ignoring alternative branches created by edits.
+- **Embedding Generation:** Generates vector embeddings for message content using OpenAI's API (`text-embedding-3-small` by default).
 - **Robust Parsing:** Handles variations in the export format (e.g., top-level list or dictionary).
-- **DynamoDB Integration:** Loads extracted messages into a specified DynamoDB table, storing conversation ID, message ID, author, timestamp, and content.
+- **DynamoDB Integration:** Loads extracted messages into a specified DynamoDB table, storing conversation ID, message ID, author, timestamp, content, and the generated `ContentEmbedding`.
+- **Vector Store Integration (Planned):** The ingestion process will be modified to also load embeddings and relevant metadata into a dedicated vector store (Weaviate planned for local development) to enable efficient similarity search.
 - **Efficient Updates (Diff and Delete):** When re-processing, compares the newly parsed canonical messages against existing messages for that conversation in DynamoDB. It then performs a batch operation to:
   - `DELETE` messages that are no longer part of the canonical thread.
   - `PUT` new or updated messages (DynamoDB's `put_item` handles both inserts and updates).
@@ -37,21 +39,22 @@ The project emphasizes modularity, testability, and adherence to standard Python
 - **Boto3:** AWS SDK for Python, used for DynamoDB interaction.
 - **Pytest:** Testing framework.
 - **DynamoDB:** NoSQL database (designed for AWS DynamoDB, uses DynamoDB Local for development and testing).
+- **OpenAI API:** Used for generating text embeddings.
+- **Weaviate (Planned):** Vector database used for storing and searching embeddings (run locally via Docker Compose for development).
 
 ## Setup
 
-Before running the application or tests, you need a local DynamoDB instance running.
+For local development and testing, the application requires Docker and Docker Compose.
 
-1.  **Install Docker:** Ensure you have Docker installed and running on your system.
-2.  **Run DynamoDB Local Container:** Open your terminal and run the following command to download and start the official DynamoDB Local container:
+1.  **Install Docker and Docker Compose:** Ensure you have both installed and running on your system. Docker Desktop includes Compose.
+2.  **Create Docker Compose File:** Create a `docker-compose.yml` file in the project root (see example below or the actual file if it exists).
+3.  **Start Local Services:** Run the following command in your terminal from the project root to download images and start DynamoDB Local and Weaviate containers:
     ```bash
-    docker run -p 8000:8000 amazon/dynamodb-local -jar DynamoDBLocal.jar -sharedDb
+    docker-compose up -d  # -d runs in detached mode
     ```
-    - `-p 8000:8000`: Maps port 8000 on your host to port 8000 inside the container, which is the default port for DynamoDB Local.
-    - `-sharedDb`: Ensures that DynamoDB uses a single database file, making it behave more like the web service, especially regarding table creation/persistence across container restarts (if a volume isn't used).
-      Keep this terminal window open; the container runs in the foreground.
-3.  **Create the Main Table (First Time Only):** The main application script (`orchestrator.py`) expects the `ChatConversations` table to exist in your local DynamoDB instance. The automated tests create their own temporary tables, but for regular runs, you need to create the main table once.
-    - You can use the AWS CLI configured for the local endpoint:
+    _(This replaces the previous `docker run` command for DynamoDB)_
+4.  **Create DynamoDB Table (First Time Only):** The main application script (`orchestrator.py`) expects the `ChatConversations` table to exist in your local DynamoDB instance. The automated tests create their own temporary tables, but for regular runs, you need to create the main table once.
+    - Use the AWS CLI configured for the local endpoint (`http://localhost:8000`):
       ```bash
       aws dynamodb create-table \
           --table-name ChatConversations \
@@ -61,12 +64,17 @@ Before running the application or tests, you need a local DynamoDB instance runn
           --endpoint-url http://localhost:8000
       ```
     - Alternatively, you could adapt the `create_table` function from `chat_etl/utils/dynamodb_utils.py` into a small standalone script to create the table if you prefer not to use the AWS CLI.
-4.  **Install Dependencies:** Set up a Python virtual environment and install the required packages:
+5.  **Install Dependencies:** Set up a Python virtual environment and install the required packages:
     ```bash
     python -m venv venv
     source venv/bin/activate  # On Windows use `venv\Scripts\activate`
     pip install -r requirements.txt
     ```
+6.  **Configure Environment Variables:**
+    - For embedding generation, you need an OpenAI API key. Set the following environment variable (e.g., by creating a `.env` file in the project root and using `python-dotenv`, or by setting it directly in your shell):
+      ```bash
+      export OPENAI_API_KEY='your-openai-api-key'
+      ```
 
 ## 5. Project Structure
 
@@ -116,9 +124,11 @@ The main workflow is coordinated by `orchestrator.py`:
       - Loads the list of canonical messages from the `_parsed.json` file and extracts their message IDs into a set.
       - Calculates the difference:
         - `ids_to_delete = db_message_ids - canonical_message_ids`
+      - Generates embeddings for messages to be put/updated using OpenAI API.
       - Uses DynamoDB's `batch_writer` to efficiently:
         - Delete items whose `ItemType` corresponds to an ID in `ids_to_delete`.
-        - Put items for every message in the current `canonical_messages` list (this performs inserts for new messages and updates for existing ones).
+        - Put items for every message in the current `canonical_messages` list (this performs inserts for new messages and updates for existing ones, regenerating embeddings for all put items).
+      - _(Planned)_ Uses Weaviate client to batch insert/update message data and embeddings into the vector store.
 
 ## 7. Running the Application
 
@@ -151,11 +161,17 @@ The `.gitignore` file is configured to prevent accidental commits of the default
 
 ## Future Enhancements
 
+- **Lambda and S3**: Store the raw conversation files in S3 and move the ETL pipeline to a lambda that get's run on an S3 trigger
+- **Optimize Embedding Generation:** Avoid redundant OpenAI API calls by checking if an embedding already exists for unchanged messages before regenerating it during the sync process.
 - **Dockerization with Compose:** Containerize the Python application (`parser`, `ingestor`, etc.) and use `Docker Compose` to manage it alongside the already-used DynamoDB Local container. This provides a fully integrated development/testing environment started with a single command (`docker-compose up`) and simplifies potential deployment.
-- **Configuration File:** Manage directory paths, table names, and AWS credentials/endpoints via a configuration file (e.g., YAML, `.env`).
+- **Configuration File:** Manage directory paths, table names, OpenAI model, Weaviate endpoint, and AWS credentials/endpoints via a configuration file (e.g., YAML, `.env`).
 - **Enhanced Error Handling:** More specific error catching and reporting throughout the pipeline.
 - **Logging:** Implement structured logging instead of just using `print`.
 - **Schema Validation:** Add validation for incoming JSON data and outgoing DynamoDB items.
 - **Metadata Storage:** Store conversation metadata (title, create time, etc.) as a separate item type in DynamoDB (e.g., `ItemType` = `METADATA`).
 - **CLI Arguments:** Add more command-line arguments (e.g., using `argparse`) to control directories, table names, etc., for `orchestrator.py`.
 - **Unit Tests:** Add more granular unit tests for functions like `extract_canonical_messages` and the diff logic, potentially using mocking.
+- **Implement Semantic Search:** Create a search service/API that takes a query, generates an embedding, queries Weaviate, and retrieves relevant messages.
+- **Build User Interface:** Develop a CLI or web interface for search and potentially RAG.
+- **Implement RAG:** Integrate search results with an LLM to answer questions about chat history.
+- **Deploy to Cloud:** Migrate local Docker Compose setup to managed AWS services (DynamoDB, OpenSearch/Managed Weaviate/Pinecone, Lambda/ECS/Fargate).

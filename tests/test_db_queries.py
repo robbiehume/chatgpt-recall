@@ -2,6 +2,7 @@ import boto3
 from boto3.dynamodb.conditions import Key
 import os
 import sys
+from decimal import Decimal # Added for type checking
 
 # Default Configuration (used when run standalone)
 DYNAMODB_ENDPOINT = "http://localhost:8000"
@@ -34,6 +35,12 @@ def run_all_queries(table_name, endpoint_url):
         if items:
             for i, item in enumerate(items):
                 print(f"  - Item {i+1}: SK={item.get('ItemType')}, Author={item.get('Author')}, Content='{item.get('Content', '')[:50]}...'")
+                # Check for embedding
+                embedding = item.get('ContentEmbedding')
+                if embedding:
+                    print(f"      Embedding: Present (Type: {type(embedding)}, Length: {len(embedding)}, First 3: {embedding[:3]}...)")
+                else:
+                    print("      Embedding: Not Present")
         else:
             print("  No items found for this ConversationID.")
     except Exception as e:
@@ -62,6 +69,12 @@ def run_all_queries(table_name, endpoint_url):
             print(f"  - Author: {item.get('Author')}")
             print(f"  - Timestamp: {item.get('Timestamp')}")
             print(f"  - Content: '{item.get('Content', '')}'")
+            # Check for embedding
+            embedding = item.get('ContentEmbedding')
+            if embedding:
+                print(f"  - Embedding: Present (Type: {type(embedding)}, Length: {len(embedding)}, First 3: {embedding[:3]}...)")
+            else:
+                print("  - Embedding: Not Present")
         else:
             print("  Specific item not found.")
     except Exception as e:
@@ -77,6 +90,12 @@ def run_all_queries(table_name, endpoint_url):
         if items:
             for i, item in enumerate(items):
                 print(f"  - Sample {i+1}: PK={item.get('ConversationID')}, SK={item.get('ItemType')}, Author={item.get('Author')}")
+                # Check for embedding
+                embedding = item.get('ContentEmbedding')
+                if embedding:
+                    print(f"      Embedding: Present (Type: {type(embedding)}, Length: {len(embedding)}, First 3: {embedding[:3]}...)")
+                else:
+                    print("      Embedding: Not Present")
         else:
             print("  Scan returned no items (table might be empty).")
         
