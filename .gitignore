@@ -5,6 +5,7 @@ __pycache__/
 
 # Virtual environment directories
 venv/
+_venv/
 env/
 ENV/
 
@@ -62,6 +63,7 @@ docker-compose.local.yml
 
 # DynamoDB Local data (if applicable)
 dynamodb_local/
+data/ # Ignore local data directory used by Docker Compose
 
 # Generated output files (adjust if you want to track these)
 #output.json
@@ -80,5 +82,9 @@ PROJECT_DEEP_DIVE.md
 PROJECT_JOURNEY.md
 
 # Python specific
-# ... existing code ...
 
+chat_history_exports/
+chat_export/
+export_cursor_chat_history_to_md.py
+final_cleaned_conv_334ed316.txt
+extracted_conv_334ed316.md

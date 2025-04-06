@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  weaviate:
+    image: semitechnologies/weaviate:1.25.4 # Use a specific recent version
+    container_name: weaviate_local
+    ports:
+      - "8080:8080" # REST API
+      - "50051:50051" # gRPC API
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
+      DEFAULT_VECTORIZER_MODULE: "none" # We provide our own vectors
+      ENABLE_MODULES: "" # Disable any default text2vec modules
+      CLUSTER_HOSTNAME: "node1" # Required for newer versions
+    restart: on-failure:0
+
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: dynamodb_local
+    ports:
+      - "8000:8000" # DynamoDB API port
+    volumes:
+      # Mount a local directory for data persistence
+      - ./data/dynamodb:/home/dynamodblocal/data/dynamodb
+    # Use sharedDb and specify a persistent path inside the container
+    command:
+      ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "./data/dynamodb"]
+    working_dir: /home/dynamodblocal
+    restart: on-failure:0
+
+volumes:
+  weaviate_data: # Define the named volume for Weaviate
