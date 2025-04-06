@@ -63,7 +63,7 @@ docker-compose.local.yml
 
 # DynamoDB Local data (if applicable)
 dynamodb_local/
-data/ # Ignore local data directory used by Docker Compose
+data/ 
 
 # Generated output files (adjust if you want to track these)
 #output.json
